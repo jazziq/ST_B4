@@ -38,6 +38,11 @@ namespace litecart_project
             //wait.Until(ExpectedConditions.TitleIs("My Store"));
         }
 
+        public void LoginToLitecartShop()
+        {
+            driver.Navigate().GoToUrl(baseURL + "/litecart/");
+        }
+
 
         [SetUp]
         public void Start()
@@ -115,6 +120,23 @@ namespace litecart_project
             }
 
         }
+
+        [Test]
+        public void Task04_02()
+        {
+            LoginToLitecartShop();
+
+            IList<IWebElement> elements = driver.FindElements(By.CssSelector("a.link"));
+            foreach (IWebElement element in elements)
+            {
+                IList<IWebElement> stickers = element.FindElements(By.CssSelector("div.sticker"));
+                if (stickers.Count != 0)
+                {
+                    Assert.AreEqual(1, stickers.Count);
+                }
+            }
+        }
+
 
         [TearDown]
         public void Stop()
