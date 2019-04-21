@@ -126,7 +126,7 @@ namespace litecart_project
         {
             LoginToLitecartShop();
 
-            IList<IWebElement> elements = driver.FindElements(By.CssSelector("a.link"));
+            IList<IWebElement> elements = driver.FindElements(By.CssSelector("li.product"));
             foreach (IWebElement element in elements)
             {
                 IList<IWebElement> stickers = element.FindElements(By.CssSelector("div.sticker"));
