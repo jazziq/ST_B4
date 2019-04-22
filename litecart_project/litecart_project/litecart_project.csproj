@@ -73,6 +73,7 @@
   <ItemGroup>
     <Compile Include="Model\LitecartDB.cs" />
     <Compile Include="Model\CountriesData.cs" />
+    <Compile Include="Model\ProductData.cs" />
     <Compile Include="UnitTest1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
