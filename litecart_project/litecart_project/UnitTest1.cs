@@ -214,7 +214,9 @@ namespace litecart_project
       зайти в каждую из стран и проверить, что зоны расположены в алфавитном порядке
       */
 
+      
       LoginToAdmin();
+      
       driver.Navigate().GoToUrl(baseURL + "/litecart/admin/?app=countries&doc=countries");
       List<String> lcCountriesFromWeb = new List<string>();
       lcCountriesFromWeb = GetCountriesFromSite();
@@ -229,6 +231,55 @@ namespace litecart_project
 
       //Проверка сортировки зон, если они есть, внутри страны
       CheckSortedZone();
+
+          
+
+      //2) на странице http://localhost/litecart/admin/?app=geo_zones&doc=geo_zones
+      //зайти в каждую из стран и проверить, что зоны расположены в алфавитном порядке
+      driver.Navigate().GoToUrl(baseURL + "/litecart/admin/?app=geo_zones&doc=geo_zones");
+
+      ICollection<IWebElement> geozones = driver.FindElements(By.CssSelector("td#content tr.row"));
+      foreach (IWebElement element in geozones)
+      {
+        IList<IWebElement> elements_td = element.FindElements(By.CssSelector("td"));
+        if (elements_td.Count != 0)
+        {
+          int vZone = Convert.ToInt32(elements_td.ElementAt(3).Text);
+          if (vZone > 0)
+          {
+            string link = elements_td.ElementAt(2).FindElement(By.CssSelector("a")).GetAttribute("href");
+
+            //переход на страницу зон
+            IJavaScriptExecutor jse = (IJavaScriptExecutor)driver;
+            jse.ExecuteScript("window.open()");
+            driver.SwitchTo().Window(driver.WindowHandles[driver.WindowHandles.Count - 1]);
+            driver.Navigate().GoToUrl(link);
+
+            //Проверка сортировки списка стран
+            ICollection<IWebElement> tr_zones = driver.FindElements(By.CssSelector("table#table-zones.dataTable tr"));
+            List<String> lsZoneNotSorted = new List<string>();
+            for (int i = 1; i < tr_zones.Count-1; i++)
+            {
+              IList<IWebElement> tr_zones_td = tr_zones.ElementAt(i).
+                FindElements(By.CssSelector("td select [selected='selected']"));
+              lsZoneNotSorted.Add(tr_zones_td.ElementAt(1).GetAttribute("text"));
+            }
+            List<String> lsZoneSorted = new List<string>();
+            lsZoneSorted = lsZoneNotSorted;
+            lsZoneSorted.Sort();
+
+            //Проверка сортировки зон внутри страны
+            Assert.AreEqual(lsZoneNotSorted, lsZoneSorted);
+
+
+            //Закрытие активного окна и возврат на страницу Countries
+            jse.ExecuteScript("window.close()");
+            driver.SwitchTo().Window(driver.WindowHandles[driver.WindowHandles.Count - 1]);
+          }
+
+        }
+      }
+
     }
 
     public void ConvertRGB(string RGB, out int r, out int g, out int b)
