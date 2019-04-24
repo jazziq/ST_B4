@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Diagnostics;
+using System.IO;
 
 using NUnit.Framework;
 using OpenQA.Selenium;
@@ -44,6 +45,7 @@ namespace litecart_project
     public void LoginToLitecartShop()
     {
       driver.Navigate().GoToUrl(baseURL + "/litecart/");
+      //Вход под клиентом
     }
 
     [SetUp]
@@ -65,8 +67,8 @@ namespace litecart_project
       //driver = new FirefoxDriver(options);
 
 
-      //driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
-      // wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+      driver.Manage().Timeouts().ImplicitWait = TimeSpan.FromSeconds(10);
+      wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
       baseURL = "http://localhost";
     }
 
@@ -413,6 +415,210 @@ namespace litecart_project
       Assert.Greater(ProductOnProductForm.CampaignPriceFontSize, ProductOnProductForm.RegularPriceFontSize);
 
     }
+
+
+
+    [Test]
+    public void Task06_01()
+    {
+      /* "Сценарий регистрации пользователя"
+      Сделайте сценарий для регистрации нового пользователя в учебном приложении litecart 
+      (не в админке, а в клиентской части магазина).
+      Сценарий должен состоять из следующих частей:
+        1) регистрация новой учётной записи с достаточно уникальным адресом электронной почты 
+        (чтобы не конфликтовало с ранее созданными пользователями, в том числе при предыдущих 
+        запусках того же самого сценария),
+        2) выход (logout), потому что после успешной регистрации автоматически происходит вход,
+        3) повторный вход в только что созданную учётную запись,
+        4) и ещё раз выход.
+      В качестве страны выбирайте United States, штат произвольный. При этом формат индекса -- пять цифр.
+      */
+
+      driver.Navigate().GoToUrl(baseURL + "/litecart/");
+
+      //Создание нового пользователя
+      string lnkCreateNewClient = 
+        driver.FindElement(By.CssSelector("form[name='login_form'] td a")).GetAttribute("href");
+      driver.Navigate().GoToUrl(lnkCreateNewClient);
+
+      ClientData newClient = new ClientData();
+      newClient.FirstName = "John";
+      newClient.LastName = "Smith";
+      newClient.Address1 = "Test Address 1";
+      newClient.Address2 = "Test Address 2";
+      newClient.Postcode = "10001"; //5 цифр
+      newClient.City = "New York";
+      newClient.Country = "United States";
+      newClient.State = "New York";
+
+      Random random = new Random();
+      newClient.Email = string.Format("qa{0:0000}@test.com", random.Next(10000));
+
+      newClient.Phone = "+79008006050";
+      newClient.Password = "test";
+      newClient.ConfirmPassword = "test";
+
+      driver.FindElement(By.CssSelector("div#create-account.box input[name='firstname']")).
+        SendKeys(newClient.FirstName);
+      driver.FindElement(By.CssSelector("div#create-account.box input[name='lastname']")).
+        SendKeys(newClient.LastName);
+      driver.FindElement(By.CssSelector("div#create-account.box input[name='address1']")).
+        SendKeys(newClient.Address1);
+      driver.FindElement(By.CssSelector("div#create-account.box input[name='address2']")).
+        SendKeys(newClient.Address2);
+      driver.FindElement(By.CssSelector("div#create-account.box input[name='postcode']")).
+        SendKeys(newClient.Postcode);
+      driver.FindElement(By.CssSelector("div#create-account.box input[name='city']")).
+        SendKeys(newClient.City);
+
+
+      IJavaScriptExecutor jse = (IJavaScriptExecutor)driver;
+      IWebElement webElement = 
+        driver.FindElement(By.CssSelector("div#create-account.box select[name='country_code']"));
+      jse.ExecuteScript("arguments[0].click();", webElement);
+
+      new SelectElement(driver.FindElement(By.CssSelector("div#create-account.box select[name='country_code']"))).
+        SelectByText(newClient.Country);
+      driver.FindElement(By.CssSelector("div#create-account.box select[name='zone_code']")).Click();
+      new SelectElement(driver.FindElement(By.CssSelector("div#create-account.box select[name='zone_code']"))).
+        SelectByText(newClient.State);  
+
+      driver.FindElement(By.CssSelector("div#create-account.box input[name='email']")).
+        SendKeys(newClient.Email);
+      driver.FindElement(By.CssSelector("div#create-account.box input[name='phone']")).
+        SendKeys(newClient.Phone);
+      driver.FindElement(By.CssSelector("div#create-account.box input[name='password']")).
+        SendKeys(newClient.Password);
+      driver.FindElement(By.CssSelector("div#create-account.box input[name='confirmed_password']")).
+        SendKeys(newClient.ConfirmPassword);
+
+
+      //CreateAccount
+      driver.FindElement(By.CssSelector("div#create-account.box button[name='create_account']")).Click();
+      driver.FindElement(By.LinkText("Logout")).Click();
+
+      //Вход под созданным пользователем
+      driver.Navigate().GoToUrl(baseURL + "/litecart/");
+      driver.FindElement(By.Name("email")).Clear();
+      driver.FindElement(By.Name("email")).SendKeys(newClient.Email);
+      driver.FindElement(By.Name("password")).Clear();
+      driver.FindElement(By.Name("password")).SendKeys(newClient.Password);
+      driver.FindElement(By.Name("login")).Click();
+
+      driver.FindElement(By.LinkText("Logout")).Click();
+    }
+
+    [Test]
+    public void Task06_02()
+    {
+      /* "Сценарий добавления товара"
+        Сделайте сценарий для добавления нового товара (продукта) в учебном приложении litecart (в админке).
+
+        Для добавления товара нужно открыть меню Catalog, в правом верхнем углу нажать кнопку "Add New Product", 
+        заполнить поля с информацией о товаре и сохранить.
+
+        Достаточно заполнить только информацию на вкладках General, Information и Prices. 
+        Скидки (Campains) на вкладке Prices можно не добавлять.
+
+        Переключение между вкладками происходит не мгновенно, поэтому после переключения можно сделать 
+        небольшую паузу 
+        (о том, как делать более правильные ожидания, будет рассказано в следующих занятиях).
+
+        Картинку с изображением товара нужно уложить в репозиторий вместе с кодом. При этом указывать 
+        в коде полный абсолютный путь к файлу плохо, на другой машине работать не будет. 
+        Надо средствами языка программирования преобразовать относительный путь в абсолютный.
+
+        После сохранения товара нужно убедиться, что он появился в каталоге (в админке). 
+        Клиентскую часть магазина можно не проверять.
+
+      */
+
+      LoginToAdmin();
+      IList<IWebElement> menuElements = driver.FindElements(By.CssSelector("ul#box-apps-menu li#app- span.name"));
+      menuElements.ElementAt(1).Click();
+
+      driver.FindElement(By.LinkText("Add New Product")).Click();
+
+      ProductData newProduct = new ProductData();
+        newProduct.Name = "TestDuck";
+        newProduct.Code = "rd0000";
+        newProduct.Quantity = "50";
+
+      //Информация о товаре на вкладке General
+      driver.FindElement(By.LinkText("General")).Click();
+
+      //Статус
+      IList<IWebElement> statusProductElements =
+        driver.FindElements(By.CssSelector("#tab-general>table>tbody>tr>td>label"));
+      statusProductElements.ElementAt(0).Click();
+
+      //Имя и код
+      driver.FindElement(By.Name("name[en]")).Clear();
+      driver.FindElement(By.Name("name[en]")).SendKeys(newProduct.Name);
+      driver.FindElement(By.Name("code")).Clear();
+      driver.FindElement(By.Name("code")).SendKeys(newProduct.Code);
+
+      //Product Category
+      IList<IWebElement> grProductCategory_Groups = driver.FindElements(By.CssSelector("div.input-wrapper"));
+      foreach (IWebElement element in grProductCategory_Groups)
+      {
+        IList<IWebElement> grProductCategory = element.FindElements(By.CssSelector("input[type='checkbox']"));
+        foreach (IWebElement elPrCateg in grProductCategory)
+        {
+          string vRoot = elPrCateg.GetAttribute("data-name");
+          string vCheck = elPrCateg.GetAttribute("checked");
+                    
+          if (vRoot == "Root")
+          {
+            if (vCheck == "true")
+            {
+              elPrCateg.Click();
+            } else continue;
+          } else
+          {
+            if (vCheck != "true")
+            {
+              elPrCateg.Click();
+            } else continue;
+          }
+        }
+
+
+        //Проставление чеков для Product Groups пока BREAK
+        //IList<IWebElement> grProductCategory_Group = driver.FindElements(By.CssSelector("div.input-wrapper"));
+        break;
+      }
+
+      //Quantity
+      driver.FindElement(By.CssSelector("div.content input[name='quantity']")).Clear();
+      driver.FindElement(By.CssSelector("div.content input[name='quantity']")).SendKeys(newProduct.Quantity);
+      //Sold Out Status
+      driver.FindElement(By.CssSelector("#tab-general select[name='sold_out_status_id']")).Click();
+      new SelectElement(driver.FindElement(By.CssSelector("#tab-general select[name='sold_out_status_id']"))).
+        SelectByText("Temporary sold out");
+      //Upload Images
+      //string vFile = @".\.\test_yellow-duck.png";
+      //string path = Path.C
+      //Path.GetDirectoryName(Path.GetDirectoryName(System.IO.Directory.GetCurrentDirectory()));
+      //System.Reflection.Assembly.GetExecutingAssembly().CodeBase;
+      string vFile = @"test_yellow-duck.png";
+      IWebElement vSelectFile = driver.FindElement(By.CssSelector("#tab-general input[type='file']"));
+      vSelectFile.SendKeys(vFile);
+      
+
+
+
+
+      //Информация о товаре на вкладке Information
+      driver.FindElement(By.LinkText("Information")).Click();
+
+      //Информация о товаре на вкладке Prices
+      driver.FindElement(By.LinkText("Prices")).Click();
+
+      //После сохранения товара нужно убедиться, что он появился в каталоге (в админке)
+
+    }
+
 
     [TearDown]
     public void Stop()

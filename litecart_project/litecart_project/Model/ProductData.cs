@@ -47,6 +47,8 @@ namespace litecart_project
     }
 
     public string Name { get; set; } //Наименование продукта
+    public string Code { get; set; } //Код продукта
+    public string Quantity { get; set; } //Количество продукта
     public string ProductLink { get; set; } //Ссылка на страницу продукта
     public string RegularPrice { get; set; } //Постоянная цена
     public string CampaignPrice { get; set; } //Цена со скидкой
