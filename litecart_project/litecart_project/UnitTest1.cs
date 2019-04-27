@@ -550,7 +550,7 @@ namespace litecart_project
             newProduct.CurrencyCode = "US Dollars";
             newProduct.Price = "10";
             newProduct.CampaignPrice = "5";
-            
+
 
             //Информация о товаре на вкладке General
             driver.FindElement(By.LinkText("General")).Click();
@@ -663,7 +663,7 @@ namespace litecart_project
                     break;
             }
 
-            
+
             //Сохранение продукта
             driver.FindElement(By.CssSelector("#content form p span button[name='save']")).Click();
 
@@ -671,13 +671,110 @@ namespace litecart_project
             IList<IWebElement> tProducts = driver.FindElements(By.CssSelector("table.dataTable tr.row td:nth-child(3) > a"));
             foreach (IWebElement tr in tProducts)
             {
-                if (newProduct.Name == tr.GetAttribute("text") )
+                if (newProduct.Name == tr.GetAttribute("text"))
                 {
                     System.Console.Out.Write("Продукт создан успешно");
                 }
-                
+
 
             }
+        }
+
+        public string GetProdCountInProductBox()
+        {
+            string product_count = driver.FindElement(By.CssSelector("div#cart span.quantity")).GetAttribute("textContent");
+            return product_count;
+        }
+
+        [Test]
+        public void Task07_01()
+        {
+            /* Задание 13. Сделайте сценарий работы с корзиной
+
+              Сделайте сценарий для добавления товаров в корзину и удаления товаров из корзины.
+              1) открыть главную страницу
+              2) открыть первый товар из списка
+              2) добавить его в корзину (при этом может случайно добавиться товар, который там уже есть, ничего страшного)
+              3) подождать, пока счётчик товаров в корзине обновится
+              4) вернуться на главную страницу, повторить предыдущие шаги ещё два раза, чтобы в общей 
+              сложности в корзине было 3 единицы товара
+              5) открыть корзину (в правом верхнем углу кликнуть по ссылке Checkout)
+              6) удалить все товары из корзины один за другим, после каждого удаления подождать, пока 
+              внизу обновится таблица
+
+            */
+
+            //Переход на главную страницу
+            driver.Navigate().GoToUrl(baseURL + "/litecart/");
+            ProductData ProductOnMainForm = new ProductData();
+            ProductOnMainForm.Name =
+              driver.FindElement(By.CssSelector("div#box-campaigns.box div.name")).GetAttribute("innerText");
+            ProductOnMainForm.ProductLink =
+              driver.FindElement(By.CssSelector("div#box-campaigns.box a.link")).GetAttribute("href");
+
+            string prodCount = GetProdCountInProductBox();
+            int prodCountUpd = 0;
+            //Переход на страницу товара
+            driver.Navigate().GoToUrl(ProductOnMainForm.ProductLink);
+            //Добавляем товар в корзину
+
+
+            //Проверить есть ли на странице элемент Size для данного товара
+            for (int i = 0; i < 3; i++)
+            {
+                if (driver.FindElements(By.CssSelector("div.buy_now form[name='buy_now_form'] select")).Count() == 0)
+                {
+                    driver.FindElement(
+                        By.CssSelector("div#box-product.box td.quantity button[name='add_cart_product']")).Click();
+
+                    prodCountUpd = Convert.ToInt32(prodCountUpd) + 1;
+                } else
+                {
+                    driver.FindElement(By.CssSelector("div.buy_now form[name='buy_now_form'] select[name='options[Size]']")).Click();
+                    new SelectElement(driver.FindElement(By.CssSelector("div.buy_now form[name='buy_now_form'] select[name='options[Size]']"))).
+                      SelectByText("Small");
+
+                    driver.FindElement(
+                        By.CssSelector("div#box-product.box td.quantity button[name='add_cart_product']")).Click();
+
+                    prodCountUpd = Convert.ToInt32(prodCountUpd) + 1;
+                }
+
+            }
+            //Ждем пока счетчик товаров обновится
+            //driver.Navigate().Refresh();
+            WebDriverWait wait = new WebDriverWait(driver, TimeSpan.FromSeconds(50));
+            IWebElement element = driver.FindElement(By.CssSelector("div#cart span.quantity"));
+            wait.Until(
+                ExpectedConditions.TextToBePresentInElement(
+                driver.FindElement(By.CssSelector("div#cart span.quantity")),
+                Convert.ToString(prodCountUpd)));
+
+
+            //Переход в корзину
+            string vCheckOutURL =
+              driver.FindElement(By.CssSelector("div#cart a.link")).GetAttribute("href");
+            driver.Navigate().GoToUrl(vCheckOutURL);
+
+            //Удаление товара из корзины
+            //Сравниваем количество товаров с тем что в таблице
+            string vTableCountRec = driver.FindElement(
+              By.CssSelector("#order_confirmation-wrapper > table > tbody > tr:nth-child(2) > td:nth-child(1)"))
+              .GetAttribute("textContent");
+            if (vTableCountRec == Convert.ToString(prodCountUpd))
+            {
+                
+                for (int rec = 0; rec < Convert.ToInt32(vTableCountRec); rec++)
+                {
+                    prodCountUpd--;
+                    driver.FindElement(By.CssSelector("div.viewport input[name='quantity']")).Clear();
+                    driver.FindElement(By.CssSelector("div.viewport input[name='quantity']")).SendKeys(Convert.ToString(prodCountUpd));
+
+                    driver.FindElement(By.CssSelector("div.viewport button[name='update_cart_item']")).Click();
+                }
+
+            }
+
         }
 
 
