@@ -836,6 +836,82 @@ namespace litecart_project
 
     }
 
+    [Test]
+    public void Task09_01()
+    {
+      /* Задание 17. Проверьте отсутствие сообщений в логе браузера
+        Сделайте сценарий, который проверяет, не появляются ли в логе браузера сообщения 
+        при открытии страниц в учебном приложении, а именно -- страниц товаров 
+        в каталоге в административной панели.
+
+        Сценарий должен состоять из следующих частей:
+        1) зайти в админку
+        2) открыть каталог, категорию, которая содержит товары (страница http://localhost/litecart/admin/?app=catalog&doc=catalog&category_id=1)
+        3) последовательно открывать страницы товаров и проверять, не появляются ли в логе браузера сообщения (любого уровня)
+      */
+
+      //Вход
+      LoginToAdmin();
+
+      //Открываем раздел Countries
+      IList<IWebElement> menuElements = driver.FindElements(By.CssSelector("ul#box-apps-menu li#app- span.name"));
+      menuElements.ElementAt(1).Click();
+
+      //Просмотр папок 
+      while (driver.
+        FindElements(By.CssSelector("td#content > form > table > tbody > tr.row td:nth-child(3) i.fa.fa-folder")).
+        Count > 0) 
+      {
+        IList<IWebElement> foldersElements = driver.
+          FindElements(By.CssSelector("td#content > form > table > tbody > tr.row td:nth-child(3) i.fa.fa-folder"));
+
+        foreach (IWebElement el in foldersElements)
+        {
+          el.FindElement(By.XPath("../a")).Click();
+          //driver.Navigate().Refresh();
+        }        
+      }
+
+      
+      //Ссылки продуктов
+      IList<IWebElement> ProductLinks =
+          driver.FindElements(By.CssSelector("td#content > form > table > tbody > tr.row td:nth-child(3) a"));
+      foreach (IWebElement pl in ProductLinks)
+      {
+        //Ссылка на страницу продукта
+        string lnkOnOpenTab = pl.GetAttribute("href");
+        string productName = pl.GetAttribute("text");
+
+        if (lnkOnOpenTab.Contains("product") == true)
+        {
+          //Переход на страницу продукта
+          IJavaScriptExecutor jse = (IJavaScriptExecutor)driver;
+          jse.ExecuteScript("window.open()");
+          driver.SwitchTo().Window(driver.WindowHandles[driver.WindowHandles.Count - 1]);
+          driver.Navigate().GoToUrl(lnkOnOpenTab);
+
+          System.Console.Out.WriteLine("Product Name: " + productName);
+          System.Console.Out.WriteLine("Product URL: " + lnkOnOpenTab);
+          System.Console.Out.WriteLine("START -----------------------------");
+
+          //Просматриваем логи
+          foreach (LogEntry l in driver.Manage().Logs.GetLog("browser"))
+          {
+            System.Console.Out.WriteLine("Errors: "+ l);
+          }
+          System.Console.Out.WriteLine("END -----------------------------" + "\n");
+
+
+          //Закрытие активного окна и возврат на страницу Countries
+          jse.ExecuteScript("window.close()");
+          driver.SwitchTo().Window(driver.WindowHandles[driver.WindowHandles.Count - 1]);
+        }
+        
+      }
+
+
+    }
+
     [TearDown]
     public void Stop()
     {
